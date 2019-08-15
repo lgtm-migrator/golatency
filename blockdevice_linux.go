@@ -15,6 +15,6 @@ import (
 import "C"
 
 func getBlockDeviceSize(f *os.File) int64 {
-	size:=int64(C.get_size(C.int(f.Fd())))
+	size := int64(C.get_size(C.int(f.Fd())))
 	return size
 }

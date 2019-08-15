@@ -8,6 +8,6 @@ import (
 )
 
 func getBlockDeviceSize(f *os.File) int64 {
-    log.Println("not supported")
+	log.Println("not supported")
 	return 0
 }
