@@ -47,9 +47,10 @@ func main() {
 		log.Printf("block device size: %v\n", ByteCountDecimal(blkSize))
 		if blkSize > 0 {
 			size = blkSize
+		}
 	}
-		if size == 0 {
-			os.Exit(-1)
+	if size == 0 {
+		os.Exit(-1)
 	}
 
 	log.Printf("size: %v (%v), doing %v req...", ByteCountDecimal(size), ByteCountBinary(size), count)
