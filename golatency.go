@@ -23,7 +23,7 @@ func main() {
 		log.Fatalln("no file given!")
 	}
 
-	f, err := os.Open(myfile)
+	f, err := os.OpenFile(myfile, os.O_RDONLY, 0400)
 	if err != nil {
 		log.Fatal(err)
 	}
