@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"os"
@@ -15,8 +16,10 @@ import (
 func main() {
 	var count int
 	var nocache bool
+	var seqTest bool
 	flag.IntVar(&count, "count", 100, "how many read to do")
 	flag.BoolVar(&nocache, "nocache", false, "bypass OS Cache")
+	flag.BoolVar(&seqTest, "T", false, "finish by a quick sequential complete file read")
 	flag.Parse()
 	var myfile string
 	if len(flag.Args()) >= 1 {
@@ -27,6 +30,7 @@ func main() {
 
 	OpenFile := os.OpenFile
 	if nocache {
+		log.Println("nocache requested")
 		OpenFile = directio.OpenFile
 	}
 	f, err := OpenFile(myfile, os.O_RDONLY, 0400)
@@ -96,9 +100,32 @@ func main() {
 		count,
 		ByteCountDecimal(int64(512*count)),
 		ByteCountDecimal(int64(4096*count)))
+
+	if seqTest {
+		_, err := f.Seek(0, 0)
+		if err != nil {
+			log.Fatal(err)
+		}
+		b := make([]byte, 128*1024)
+		total := 0
+		start := time.Now()
+		log.Println("doing a seq read ...")
+		for {
+			n, err := f.Read(b)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Fatal(err)
+			}
+			total += n
+		}
+		t := time.Since(start)
+		log.Printf("%v bytes read in %v (%v/s)", ByteCountDecimal(int64(total)), t.String(), ByteCountDecimal(int64(float64(total)/t.Seconds())))
+	}
 }
 
-// these 2 are ripped off the interweb
+// these 2 are ripped off from the interweb
 
 func ByteCountDecimal(b int64) string {
 	const unit = 1000
@@ -110,7 +137,7 @@ func ByteCountDecimal(b int64) string {
 		div *= unit
 		exp++
 	}
-	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
+	return fmt.Sprintf("%.2f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
 
 func ByteCountBinary(b int64) string {
@@ -123,5 +150,5 @@ func ByteCountBinary(b int64) string {
 		div *= unit
 		exp++
 	}
-	return fmt.Sprintf("%.1f %ciB", float64(b)/float64(div), "KMGTPE"[exp])
+	return fmt.Sprintf("%.2f %ciB", float64(b)/float64(div), "KMGTPE"[exp])
 }
