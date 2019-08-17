@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"flag"
 	"fmt"
 	"io"
@@ -9,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ncw/directio"
@@ -108,8 +108,8 @@ func main() {
 			log.Fatal(err)
 		}
 		b := make([]byte, 128*1024)
-		total := 0
-		steptotal := 0
+		var total int64 = 0
+		var steptotal int64 = 0
 		start := time.Now()
 		step := start
 		log.Println("doing a seq read ...")
@@ -121,18 +121,17 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			total += n
-			steptotal += n
+			total += int64(n)
+			steptotal += int64(n)
 			if time.Since(step) >= time.Second {
-				fmt.Print(strings.Repeat(" ",60))
-				fmt.Printf("\r ~ %v/s (%v - %v)\r", ByteCountDecimal(int64(steptotal)), ByteCountDecimal(int64(total)),ByteCountBinary(int64(total)))
+				fmt.Print(strings.Repeat(" ", 60))
+				fmt.Printf("\r ~ %v/s (%v - %v)\r", ByteCountDecimal(steptotal), ByteCountDecimal(total), ByteCountBinary(total))
 				step = time.Now()
 				steptotal = 0
 			}
 		}
 		t := time.Since(start)
-		//fmt.Println("")
-		log.Printf("%v bytes read in %v (%v/s)", ByteCountDecimal(int64(total)), t.Round(100*time.Millisecond).String(), ByteCountDecimal(int64(float64(total)/t.Seconds())))
+		log.Printf("%v bytes read in %v (%v/s)", ByteCountDecimal(total), t.Round(100*time.Millisecond).String(), ByteCountDecimal(int64(float64(total)/t.Seconds())))
 	}
 }
 
