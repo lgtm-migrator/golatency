@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"flag"
 	"fmt"
 	"io"
@@ -108,7 +109,9 @@ func main() {
 		}
 		b := make([]byte, 128*1024)
 		total := 0
+		steptotal := 0
 		start := time.Now()
+		step := start
 		log.Println("doing a seq read ...")
 		for {
 			n, err := f.Read(b)
@@ -119,9 +122,17 @@ func main() {
 				log.Fatal(err)
 			}
 			total += n
+			steptotal += n
+			if time.Since(step) >= time.Second {
+				fmt.Print(strings.Repeat(" ",60))
+				fmt.Printf("\r ~ %v/s (%v - %v)\r", ByteCountDecimal(int64(steptotal)), ByteCountDecimal(int64(total)),ByteCountBinary(int64(total)))
+				step = time.Now()
+				steptotal = 0
+			}
 		}
 		t := time.Since(start)
-		log.Printf("%v bytes read in %v (%v/s)", ByteCountDecimal(int64(total)), t.String(), ByteCountDecimal(int64(float64(total)/t.Seconds())))
+		//fmt.Println("")
+		log.Printf("%v bytes read in %v (%v/s)", ByteCountDecimal(int64(total)), t.Round(100*time.Millisecond).String(), ByteCountDecimal(int64(float64(total)/t.Seconds())))
 	}
 }
 
