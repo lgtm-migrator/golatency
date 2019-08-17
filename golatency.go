@@ -63,6 +63,9 @@ func main() {
 	var b []byte
 	if nocache {
 		b = directio.AlignedBlock(directio.BlockSize)
+		if int64(len(b)) > size {
+			log.Printf("-nocache needs a file at least %v B long, we will probably fail", len(b))
+		}
 	} else {
 		b = make([]byte, 1)
 	}
@@ -71,9 +74,10 @@ func main() {
 	var myrand int64
 	start := time.Now()
 	for index := 0; index < count; index++ {
-		if nocache {
+		var alignSize int64 = directio.AlignSize
+		if nocache && alignSize != 0 {
 			// random aligned offset
-			myrand = rand.Int63n((size-1)/directio.AlignSize) * directio.AlignSize
+			myrand = rand.Int63n((size-1)/alignSize) * alignSize
 		} else {
 			//random offset
 			myrand = rand.Int63n(size - 1)
