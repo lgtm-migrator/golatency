@@ -6,15 +6,17 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
-	// "golang.org/x/sys/unix"
+
+	"github.com/ncw/directio"
 )
 
 func main() {
-	var buf int
 	var count int
-	flag.IntVar(&buf, "buffer", 1, "buffer size")
+	var nocache bool
 	flag.IntVar(&count, "count", 100, "how many read to do")
+	flag.BoolVar(&nocache, "nocache", false, "bypass OS Cache")
 	flag.Parse()
 	var myfile string
 	if len(flag.Args()) >= 1 {
@@ -23,7 +25,11 @@ func main() {
 		log.Fatalln("no file given!")
 	}
 
-	f, err := os.OpenFile(myfile, os.O_RDONLY, 0400)
+	OpenFile := os.OpenFile
+	if nocache {
+		OpenFile = directio.OpenFile
+	}
+	f, err := OpenFile(myfile, os.O_RDONLY, 0400)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,7 +38,6 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
-
 	log.Printf("file %v opened\n", myfile)
 
 	s, err := f.Stat()
@@ -42,9 +47,9 @@ func main() {
 	size := s.Size()
 
 	if size == 0 {
-		log.Println("0-sized file, trying as a block device")
+		log.Println("0-sized file, trying to read size as a block device")
 		blkSize := getBlockDeviceSize(f)
-		log.Printf("block device size: %v\n", ByteCountDecimal(blkSize))
+		log.Printf("found block device size: %v\n", ByteCountDecimal(blkSize))
 		if blkSize > 0 {
 			size = blkSize
 		}
@@ -55,28 +60,41 @@ func main() {
 
 	log.Printf("size: %v (%v), doing %v req...", ByteCountDecimal(size), ByteCountBinary(size), count)
 
-	b := make([]byte, buf)
+	var b []byte
+	if nocache {
+		b = directio.AlignedBlock(directio.BlockSize)
+	} else {
+		b = make([]byte, 1)
+	}
+	// dummy seeding <-- disabled for deterministic seeks
+	// rand.Seed(int64(os.Getpid()))
+	var myrand int64
 	start := time.Now()
 	for index := 0; index < count; index++ {
-		myrand := rand.Int63n(size)
-		//log.Printf("rand: %v %v", myrand, time.Now().UnixNano())
-		_, err = f.ReadAt(b, myrand-1)
+		if nocache {
+			// random aligned offset
+			myrand = rand.Int63n((size-1)/directio.AlignSize) * directio.AlignSize
+		} else {
+			//random offset
+			myrand = rand.Int63n(size - 1)
+		}
+		_, err = f.ReadAt(b, myrand)
 		if err != nil {
 			log.Fatal(err)
 		}
-		//log.Println(r)
 	}
 
 	t := time.Since(start)
-	//log.Printf("total time: %v ns (%v ms) for %v requests", t.Nanoseconds(), t.Nanoseconds()/1000000, count)
 	log.Printf("total time: %v ns (%v) for %v requests", t.Nanoseconds(), t.String(), count)
-	log.Printf("per rq time: %v ns (%v ms)", t.Nanoseconds()/int64(count), t.Nanoseconds()/1000000/int64(count))
-	//log.Printf("timed: %v", (t/time.Duration(count)).Nanoseconds()/100)
-	// i, err := unix.IoctlGetInt(int(f.Fd()), unix.BLKGETSIZE64)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	durationPerReq, _ := time.ParseDuration(strconv.Itoa(int(t.Nanoseconds()/int64(count))) + "ns")
+	log.Printf("per rq time: %v ns (%v)", t.Nanoseconds()/int64(count), durationPerReq.String())
+	log.Printf("bytes requested (%v blocks): %v (512) | %v (4096)",
+		count,
+		ByteCountDecimal(int64(512*count)),
+		ByteCountDecimal(int64(4096*count)))
 }
+
+// these 2 are ripped off the interweb
 
 func ByteCountDecimal(b int64) string {
 	const unit = 1000
