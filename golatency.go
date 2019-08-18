@@ -22,9 +22,11 @@ func main() {
 	var count int
 	var nocache bool
 	var seqTest bool
+	var quickTest bool
 	flag.IntVar(&count, "count", 100, "how many read to do")
 	flag.BoolVar(&nocache, "nocache", false, "bypass OS Cache")
-	flag.BoolVar(&seqTest, "T", false, "finish by a quick sequential complete file read")
+	flag.BoolVar(&seqTest, "T", false, "finish by a sequential complete file read")
+	flag.BoolVar(&quickTest, "t", false, "finish by a quick sequential complete file read (10s max)")
 	flag.Parse()
 
 	aurora := auroraPackage.NewAurora(isatty.IsTerminal(os.Stdout.Fd()))
@@ -111,7 +113,7 @@ func main() {
 		ByteCountDecimal(int64(512*count)),
 		ByteCountDecimal(int64(4096*count)))
 
-	if seqTest {
+	if seqTest || quickTest {
 		_, err := f.Seek(0, 0)
 		if err != nil {
 			log.Fatal(err)
@@ -121,7 +123,11 @@ func main() {
 		var steptotal int64 = 0
 		start := time.Now()
 		step := start
-		log.Println("doing a seq read ...")
+		if seqTest {
+			log.Println("doing a seq read ...")
+		} else {
+			log.Println("doing a quick seq read ...")
+		}
 		for {
 			n, err := f.Read(b)
 			if err == io.EOF {
@@ -137,6 +143,9 @@ func main() {
 				fmt.Printf("\r ~ %v/s (%v - %v)\r", ByteCountDecimal(steptotal), ByteCountDecimal(total), ByteCountBinary(total))
 				step = time.Now()
 				steptotal = 0
+			}
+			if quickTest && time.Since(start) > 10*time.Second {
+				break
 			}
 		}
 		t := time.Since(start)
