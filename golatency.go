@@ -12,6 +12,10 @@ import (
 	"time"
 
 	"github.com/ncw/directio"
+
+	auroraPackage "github.com/logrusorgru/aurora"
+	"github.com/mattn/go-colorable"
+	"github.com/mattn/go-isatty"
 )
 
 func main() {
@@ -22,6 +26,11 @@ func main() {
 	flag.BoolVar(&nocache, "nocache", false, "bypass OS Cache")
 	flag.BoolVar(&seqTest, "T", false, "finish by a quick sequential complete file read")
 	flag.Parse()
+
+	aurora := auroraPackage.NewAurora(isatty.IsTerminal(os.Stdout.Fd()))
+	log.SetOutput(colorable.NewColorableStdout())
+	emphasis := aurora.Green
+
 	var myfile string
 	if len(flag.Args()) >= 1 {
 		myfile = flag.Arg(0)
@@ -31,7 +40,7 @@ func main() {
 
 	OpenFile := os.OpenFile
 	if nocache {
-		log.Println("nocache requested")
+		log.Println(emphasis("nocache requested"))
 		OpenFile = directio.OpenFile
 	}
 	f, err := OpenFile(myfile, os.O_RDONLY, 0400)
@@ -43,7 +52,7 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
-	log.Printf("file %v opened\n", myfile)
+	log.Printf("file %v opened\n", emphasis(myfile))
 
 	s, err := f.Stat()
 	if err != nil {
@@ -63,7 +72,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	log.Printf("size: %v (%v), doing %v req...", ByteCountDecimal(size), ByteCountBinary(size), count)
+	log.Printf("size: %v (%v), doing %v req...", emphasis(ByteCountDecimal(size)), ByteCountBinary(size), count)
 
 	var b []byte
 	if nocache {
@@ -94,9 +103,9 @@ func main() {
 	}
 
 	t := time.Since(start)
-	log.Printf("total time: %v ns (%v) for %v requests", t.Nanoseconds(), t.String(), count)
+	log.Printf("total time: %v ns (%s) for %v requests", t.Nanoseconds(), t, count)
 	durationPerReq, _ := time.ParseDuration(strconv.Itoa(int(t.Nanoseconds()/int64(count))) + "ns")
-	log.Printf("per rq time: %v ns (%v)", t.Nanoseconds()/int64(count), durationPerReq.String())
+	log.Printf("per rq time: %v ns (%s)", t.Nanoseconds()/int64(count), emphasis(durationPerReq))
 	log.Printf("bytes requested (%v blocks): %v (512) | %v (4096)",
 		count,
 		ByteCountDecimal(int64(512*count)),
@@ -131,7 +140,10 @@ func main() {
 			}
 		}
 		t := time.Since(start)
-		log.Printf("%v bytes read in %v (%v/s)", ByteCountDecimal(total), t.Round(100*time.Millisecond).String(), ByteCountDecimal(int64(float64(total)/t.Seconds())))
+		log.Printf("%v bytes read in %s (%s)",
+			ByteCountDecimal(total),
+			t,
+			emphasis(ByteCountDecimal(int64(float64(total)/t.Seconds()))+"/s"))
 	}
 }
 
