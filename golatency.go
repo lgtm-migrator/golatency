@@ -45,7 +45,7 @@ func main() {
 		log.Println(emphasis("nocache requested"))
 		OpenFile = directio.OpenFile
 	}
-	f, err := OpenFile(myfile, os.O_RDONLY, 0400)
+	f, err := OpenFile(myfile, os.O_RDONLY, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
