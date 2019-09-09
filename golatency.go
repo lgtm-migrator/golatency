@@ -23,10 +23,12 @@ func main() {
 	var nocache bool
 	var seqTest bool
 	var quickTest bool
+	var seed bool
 	flag.IntVar(&count, "count", 100, "how many read to do")
 	flag.BoolVar(&nocache, "nocache", false, "bypass OS Cache")
 	flag.BoolVar(&seqTest, "T", false, "finish by a sequential complete file read")
 	flag.BoolVar(&quickTest, "t", false, "finish by a quick sequential complete file read (10s max)")
+	flag.BoolVar(&seed, "truerandom", false, "seeks are not deterministic (repeatable) anymore")
 	flag.Parse()
 
 	aurora := auroraPackage.NewAurora(isatty.IsTerminal(os.Stdout.Fd()))
@@ -85,8 +87,12 @@ func main() {
 	} else {
 		b = make([]byte, 1)
 	}
-	// dummy seeding <-- disabled for deterministic seeks
-	// rand.Seed(int64(os.Getpid()))
+	if seed {
+		dummySeed := int64(os.Getpid()) + time.Now().UnixNano()
+		//log.Printf("seeding is set to %v", emphasis(dummySeed))
+		log.Printf("seeding nonsense as requested.")
+		rand.Seed(dummySeed)
+	}
 	var myrand int64
 	start := time.Now()
 	for index := 0; index < count; index++ {
@@ -119,8 +125,8 @@ func main() {
 			log.Fatal(err)
 		}
 		b := make([]byte, 128*1024)
-		var total int64 = 0
-		var steptotal int64 = 0
+		var total int64
+		var steptotal int64
 		start := time.Now()
 		step := start
 		if seqTest {
