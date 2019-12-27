@@ -19,11 +19,13 @@ import (
 )
 
 func main() {
-	var count int
-	var nocache bool
-	var seqTest bool
-	var quickTest bool
-	var seed bool
+	var (
+		count     int
+		nocache   bool
+		seqTest   bool
+		quickTest bool
+		seed      bool
+	)
 	flag.IntVar(&count, "count", 100, "how many read to do")
 	flag.BoolVar(&nocache, "nocache", false, "bypass OS Cache")
 	flag.BoolVar(&seqTest, "T", false, "finish by a sequential complete file read")
