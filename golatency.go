@@ -68,7 +68,7 @@ func main() {
 	size := s.Size()
 
 	if size == 0 {
-		if (s.Mode() & os.ModeDevice) != 0 {
+		if s.Mode()&os.ModeDevice != 0 && s.Mode()&os.ModeCharDevice == 0 {
 			log.Println("0-sized file is reported as a block device, trying to read size as such...")
 		} else {
 			log.Println("0-sized file, trying to read size as a block device as a last resort...")
