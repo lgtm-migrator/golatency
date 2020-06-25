@@ -74,7 +74,7 @@ func main() {
 			log.Println("0-sized file, trying to read size as a block device as a last resort...")
 		}
 		blkSize := getBlockDeviceSize(f)
-		log.Printf("found block device size: %v\n", ByteCountDecimal(blkSize))
+		log.Printf("found block device size: %v\n", byteCountDecimal(blkSize))
 		if blkSize > 0 {
 			size = blkSize
 		}
@@ -83,7 +83,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	log.Printf("size: %v (%v), doing %v req...", emphasis(ByteCountDecimal(size)), ByteCountBinary(size), count)
+	log.Printf("size: %v (%v), doing %v req...", emphasis(byteCountDecimal(size)), byteCountBinary(size), count)
 
 	var b []byte
 	if nocache {
@@ -123,8 +123,8 @@ func main() {
 	log.Printf("per rq time: %v ns (%s)", t.Nanoseconds()/int64(count), emphasis(durationPerReq))
 	log.Printf("bytes requested (%v blocks): %v (512) | %v (4096)",
 		count,
-		ByteCountDecimal(int64(512*count)),
-		ByteCountDecimal(int64(4096*count)))
+		byteCountDecimal(int64(512*count)),
+		byteCountDecimal(int64(4096*count)))
 
 	if seqTest || quickTest {
 		_, err := f.Seek(0, 0)
@@ -153,7 +153,7 @@ func main() {
 			steptotal += int64(n)
 			if time.Since(step) >= time.Second {
 				fmt.Print(strings.Repeat(" ", 60))
-				fmt.Printf("\r ~ %v/s (%v - %v)\r", ByteCountDecimal(steptotal), ByteCountDecimal(total), ByteCountBinary(total))
+				fmt.Printf("\r ~ %v/s (%v - %v)\r", byteCountDecimal(steptotal), byteCountDecimal(total), byteCountBinary(total))
 				step = time.Now()
 				steptotal = 0
 			}
@@ -163,15 +163,15 @@ func main() {
 		}
 		t := time.Since(start)
 		log.Printf("%v bytes read in %s (%s)",
-			ByteCountDecimal(total),
+			byteCountDecimal(total),
 			t,
-			emphasis(ByteCountDecimal(int64(float64(total)/t.Seconds()))+"/s"))
+			emphasis(byteCountDecimal(int64(float64(total)/t.Seconds()))+"/s"))
 	}
 }
 
 // these 2 are ripped off from the interweb
 
-func ByteCountDecimal(b int64) string {
+func byteCountDecimal(b int64) string {
 	const unit = 1000
 	if b < unit {
 		return fmt.Sprintf("%d B", b)
@@ -184,7 +184,7 @@ func ByteCountDecimal(b int64) string {
 	return fmt.Sprintf("%.2f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
 
-func ByteCountBinary(b int64) string {
+func byteCountBinary(b int64) string {
 	const unit = 1024
 	if b < unit {
 		return fmt.Sprintf("%d B", b)
