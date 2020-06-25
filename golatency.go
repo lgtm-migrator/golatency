@@ -64,10 +64,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	size := s.Size()
 
 	if size == 0 {
-		log.Println("0-sized file, trying to read size as a block device")
+		if (s.Mode() & os.ModeDevice) != 0 {
+			log.Println("0-sized file is reported as a block device, trying to read size as such...")
+		} else {
+			log.Println("0-sized file, trying to read size as a block device as a last resort...")
+		}
 		blkSize := getBlockDeviceSize(f)
 		log.Printf("found block device size: %v\n", ByteCountDecimal(blkSize))
 		if blkSize > 0 {
