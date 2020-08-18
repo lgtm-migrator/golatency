@@ -13,7 +13,7 @@ import (
 
 	"github.com/ncw/directio"
 
-	auroraPackage "github.com/logrusorgru/aurora"
+	auroraPackage "github.com/logrusorgru/aurora/v3"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 )
